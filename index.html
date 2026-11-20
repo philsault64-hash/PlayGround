@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#100d12">
+<title>HELLRUNNER // THE ASHEN GATE</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="game-shell" aria-label="Hellrunner arena shooter">
+  <div id="game-frame">
+    <canvas id="view" width="640" height="360" aria-label="First person arena"></canvas>
+    <div class="scanlines" aria-hidden="true"></div>
+    <header class="topline"><span>▰ <b>HELLRUNNER</b> <i>//</i> THE ASHEN GATE</span><span class="sector">SECTOR 07 <i>•</i> 03:00 AM</span></header>
+    <div id="reticle" aria-hidden="true"><i></i><b></b><em></em><strong></strong></div>
+    <div id="hud" class="hud">
+      <div class="hud-stat health"><span class="label">VITALS</span><div class="meter"><i id="health-fill"></i></div><b id="health-value">100</b></div>
+      <div class="hud-center"><span class="label">HELLSPAWN</span><b id="wave-value">01</b><small id="enemy-count">3 HOSTILES</small></div>
+      <div class="hud-stat ammo"><span class="label">12-GAUGE <i>///</i> SLUG</span><b id="ammo-value">08 <small>/ 32</small></b><div class="ammo-pips" id="ammo-pips"></div></div>
+    </div>
+    <div class="toast" id="toast" aria-live="polite"></div>
+    <div class="interaction" id="interaction"></div>
+    <section class="screen" id="start-screen">
+      <div class="screen-card intro-card">
+        <div class="eyebrow"><span></span> UAC DEEP-SITE // EMERGENCY BROADCAST <span></span></div>
+        <h1>HELL<span>RUNNER</span></h1>
+        <p class="subtitle">THE ASHEN GATE</p>
+        <p class="intro-copy">The breach is open. The dead have found their way in.<br>Hold the line. <strong>Find the exit.</strong></p>
+        <button id="start-button" class="primary-button">ENTER THE BREACH <span>▶</span></button>
+        <div class="control-hint"><span>W A S D</span> MOVE <i>·</i> <span>MOUSE</span> AIM <i>·</i> <span>CLICK</span> FIRE <i>·</i> <span>R</span> RELOAD</div>
+        <div class="mobile-hint">DUAL STICK CONTROLS AVAILABLE</div>
+      </div>
+      <div class="corner-code">BUILD 09.17.94<br>CLASSIFIED // OMEGA</div>
+    </section>
+    <section class="screen hidden" id="pause-screen"><div class="screen-card compact-card"><div class="eyebrow">FIELD SIGNAL INTERRUPTED</div><h2>PAUSED<span>.</span></h2><p>The breach can wait.</p><button id="resume-button" class="primary-button">RESUME <span>▶</span></button><div class="control-hint"><span>ESC</span> RESUME <i>·</i> <span>W A S D</span> MOVE <i>·</i> <span>R</span> RELOAD</div></div></section>
+    <section class="screen hidden" id="end-screen"><div class="screen-card compact-card"><div class="eyebrow" id="end-eyebrow">SIGNAL LOST</div><h2 id="end-title">YOU DIED<span>.</span></h2><p id="end-copy">The Ashen Gate remains open.</p><button id="restart-button" class="primary-button">RUN IT BACK <span>↻</span></button><div class="control-hint">THE GATE DOESN'T CLOSE ITSELF</div></div></section>
+    <div class="mobile-controls" id="mobile-controls">
+      <div class="stick move-stick" id="move-stick"><div class="stick-ring"></div><div class="stick-knob"></div><small>MOVE</small></div>
+      <button id="mobile-fire" class="fire-button" aria-label="Fire weapon">FIRE</button>
+      <div class="stick aim-stick" id="aim-stick"><div class="stick-ring"></div><div class="stick-knob"></div><small>AIM</small></div>
+      <button id="mobile-reload" class="reload-button" aria-label="Reload">↻</button>
+    </div>
+  </div>
+  <footer class="footline"><span>✦ <b>OBJECTIVE</b> CLEAR THE SECTOR <i>—</i> REACH THE GATE</span><span id="status-line">MOUSE TO LOOK <i>·</i> CLICK TO LOCK</span></footer>
+</main>
+<script src="game.js"></script>
+</body>
+</html>
