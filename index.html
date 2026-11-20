@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>THE BREACH</title>
+<style>
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#090909;color:#eee;font-family:"Courier New",monospace;touch-action:none;user-select:none}
+canvas{display:block;width:100%;height:100%;image-rendering:auto}
+#hud{position:absolute;inset:0;pointer-events:none;text-shadow:2px 2px #000}
+#top{position:absolute;left:50%;top:16px;transform:translateX(-50%);font-weight:900;letter-spacing:5px;color:#ddd;font-size:clamp(12px,2vw,21px)}
+#status{position:absolute;left:18px;bottom:20px;display:flex;gap:18px;align-items:flex-end;font-weight:900}.stat{font-size:clamp(16px,3vw,29px);color:#fff}.label{display:block;font-size:10px;color:#aaa;letter-spacing:2px}
+#weapon{position:absolute;right:18px;bottom:18px;width:96px;height:96px;border:2px solid #777;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);font-size:22px;font-weight:bold}
+#ammo{position:absolute;right:29px;bottom:117px;font-size:17px;font-weight:900;color:#ffb13b}
+#cross{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%)}#cross:before,#cross:after{content:"";position:absolute;background:#fff;box-shadow:1px 1px #000}.cross:before{}#cross:before{width:18px;height:2px;top:8px}#cross:after{width:2px;height:18px;left:8px}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;background:radial-gradient(circle,#333b 0,#090909e8 70%);pointer-events:auto}
+.panel{border:3px solid #777;background:#111d;padding:30px 34px;max-width:580px;box-shadow:12px 12px 0 #0008}.panel h1{margin:0 0 8px;font-size:clamp(38px,8vw,72px);letter-spacing:5px;color:#d56b45;text-shadow:4px 4px #000}.panel p{color:#bbb;line-height:1.6}.btn{display:inline-block;margin-top:12px;padding:13px 22px;border:2px solid #bbb;background:#a54028;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:2px}.btn:hover{background:#d05a35}
+#damage{position:absolute;inset:0;border:0 solid #e21b1b;pointer-events:none}
+#touch{display:none;position:absolute;inset:0}.pad{position:absolute;width:130px;height:130px;border:1px solid #7778;border-radius:50%;bottom:35px;left:18px;background:#fff12}.stick{position:absolute;width:58px;height:58px;border-radius:50%;background:#ddd6;border:2px solid #aaa;left:36px;top:36px}.fire{position:absolute;width:92px;height:92px;border-radius:50%;right:24px;bottom:38px;border:3px solid #c66;background:#a33b;border-radius:50%;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold}
+@media(pointer:coarse){#touch{display:block}#weapon{display:none}#ammo{bottom:132px}.panel{padding:22px 18px}}
+</style></head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud"><div id="top">THE BREACH — SECTOR 07</div><div id="cross"></div><div id="damage"></div>
+<div id="status"><div><span class="label">HEALTH</span><span class="stat" id="health">100</span></div><div><span class="label">ARMOR</span><span class="stat" id="armor">50</span></div><div><span class="label">KILLS</span><span class="stat" id="kills">0</span></div></div>
+<div id="ammo">12 / 48</div><div id="weapon">GUN</div></div>
+<div id="overlay"><div class="panel"><h1 id="title">THE BREACH</h1><p id="msg">The portal has opened. Clear the forsaken compound.<br>WASD move · Mouse look · Left click fire · R reload</p><div class="btn" id="start">ENTER THE BREACH</div></div></div>
+<div id="touch"><div class="pad" id="pad"><div class="stick" id="stick"></div></div><div class="fire" id="fire">FIRE</div></div>
+<script>
+const c=document.getElementById('game'),x=c.getContext('2d'),damage=document.getElementById('damage');
+let W,H,dpr;
+function resize(){dpr=Math.min(devicePixelRatio||1,1.5);W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
+const map=[
+'1111111111111111','1000000000000001','1022200022222001','1020000020002001','1000000000002001','1222220222200001','1000000200000001','1002200202222001','1002000000002001','1002022222202001','1002000000002001','1002220222222001','1000000200000001','1022220202222201','1000000000000001','1111111111111111'];
+const cols=['#2a302c','#35423b','#4a584c'];
+let player={x:1.7,y:1.7,a:0,hp:100,armor:50,ammo:12,reserve:48,kills:0};
+let enemies=[],pickups=[],bullets=[],running=false,last=0,shake=0,flash=0,reload=0;
+function reset(){player={x:1.7,y:1.7,a:0,hp:100,armor:50,ammo:12,reserve:48,kills:0};enemies=[];pickups=[];
+[[8,3],[12,5],[7,8],[13,11],[4,13],[10,14],[14,8],[3,10]].forEach((p,i)=>enemies.push({x:p[0]+.5,y:p[1]+.5,hp:i%3?55:90,cd:Math.random()*1,phase:Math.random()*6,type:i%3?0:1,hit:0}));
+[[5,5],[11,3],[13,13],[2,14],[8,11],[14,10]].forEach(p=>pickups.push({x:p[0]+.5,y:p[1]+.5,type:Math.random()<.5?'ammo':'health',taken:false}));}
+reset();
+function solid(tx,ty){return map[ty|0]?.[tx|0]==='1'||map[ty|0]?.[tx|0]==='2'}
+function move(dx,dy){let nx=player.x+dx,ny=player.y+dy;if(!solid(nx,player.y))player.x=nx;if(!solid(player.x,ny))player.y=ny}
+const keys={};addEventListener('keydown',e=>{keys[e.key.toLower]=1;if(e.key.toLowerCase()==='r')reloadNow();});addEventListener('keyup',e=>keys[e.key.toLower]=0);
+c.addEventListener('mousemove',e=>{if(running&&document.pointerLockElement===c)player.a+=e.movementX*.0023});
+c.addEventListener('click',()=>{if(running&&!matchMedia('(pointer:coarse)').matches)c.requestPointerLock?.();else if(running)shoot()});
+function shoot(){if(!running||reload)return;if(player.ammo<=0){reloadNow();return}player.ammo--;flash=.07;shake=3;bullets.push({x:player.x,y:player.y,a:player.a,life:.25});
+let best=null,bestD=1;for(const en of enemies){if(en.hp<=0)continue;let dx=en.x-player.x,dy=en.y-player.y,d=Math.hypot(dx,dy);let ang=Math.atan2(dy,dx)-player.a;while(ang>Math.PI)ang-=2*Math.PI;while(ang<-Math.PI)ang+=2*Math.PI;if(Math.abs(ang)<.055&&d<12&&d<bestD){best=en;bestD=d}}if(best){best.hp-=enemies.indexOf(best)%3?24:34;best.hit=.12;if(best.hp<=0){player.kills++;bullets.push({dead:true});if(Math.random()<.55)pickups.push({x:best.x,y:best.y,type:Math.random()<.65?'ammo':'health',taken:false})}}}
+function reloadNow(){if(reload||player.ammo>=12||player.reserve<=0)return;reload=.9}
+function update(dt){if(!running)return;let f=(keys.w?1:0)-(keys.s?1:0),s=(keys.d?1:0)-(keys.a?1:0);let sp=dt*2.25;if(f||s){let a=Math.atan2(s,f)+player.a;move(Math.cos(a)*sp*(f||s?1:0),Math.sin(a)*sp*(f||s?1:0))}if(keys.arrowleft)player.a-=dt*2;if(keys.arrowright)player.a+=dt*2;
+if(reload){reload-=dt;if(reload<=0){let n=12-player.ammo;n=Math.min(n,player.reserve);player.ammo+=n;player.reserve-=n;reload=0}}
+for(const en of enemies){if(en.hp<=0)continue;en.hit=Math.max(0,en.hit-dt);en.cd-=dt;let dx=player.x-en.x,dy=player.y-en.y,d=Math.hypot(dx,dy);if(d<7){let a=Math.atan2(dy,dx);if(d>.65&&!solid(Math.round(en.x+Math.cos(a)*dt*.6),Math.round(en.y+Math.sin(a)*dt*.6))){};en.x+=Math.cos(a)*dt*.42*(d<2.8?-.15:1);en.y+=Math.sin(a)*dt*.42*(d<2.8?-.15:1)}if(d<1.1&&en.cd<=0){en.cd=1.15-(en.type*.12);let dmg=9+(en.type*4);if(player.armor>0){let absorbed=Math.min(player.armor,dmg*.65);player.armor-=absorbed;dmg-=absorbed}player.hp-=dmg;shake=8;damage.style.borderWidth='18px';setTimeout(()=>damage.style.borderWidth='0',120);if(player.hp<=0)end(false)}}
+for(const p of pickups){if(p.taken)continue;if(Math.hypot(player.x-p.x,player.y-p.y)<.55){p.taken=true;if(p.type==='health')player.hp=Math.min(100,player.hp+25);else player.reserve=Math.min(72,player.reserve+18)}}
+bullets.forEach(b=>b.life=(b.life||0)-dt);flash=Math.max(0,flash-dt);shake*=.86;
+document.getElementById('health').textContent=Math.max(0,Math.ceil(player.hp));document.getElementById('armor').textContent=Math.ceil(player.armor);document.getElementById('kills').textContent=player.kills;document.getElementById('ammo').textContent=(reload?'...':player.ammo)+' / '+player.reserve;
+if(enemies.length&&enemies.every(e=>e.hp<=0))end(true)}
+function ray(x1,y1,a){let dx=Math.cos(a),dy=Math.sin(a),t=0,tx=x1,ty=y1,last='';for(;t<16;t+=.018){tx=x1+dx*t;ty=y1+dy*t;if(solid(tx,ty)){last=map[ty|0][tx|0];break}}return{d:t,tx,ty,type:last}}
+function draw(){x.fillStyle='#171916';x.fillRect(0,0,W,H);let horizon=H*.51;x.fillStyle='#262a24';x.fillRect(0,horizon,W,H-horizon);let sky=x.createLinearGradient(0,0,0,horizon);sky.addColorStop(0,'#101511');sky.addColorStop(1,'#30362f');x.fillStyle=sky;x.fillRect(0,0,W,horizon);
+// distant red slit
+x.fillStyle='#612519';x.fillRect(W*.42,horizon-70,W*.16,4); 
+const fov=.82*1.05;let zBuf=new Float32Array(W);for(let i=0;i<W;i+=2){let ang=player.a-fov/2+fov*i/W,r=ray(player.x,player.y,ang),d=r.d*Math.cos(ang-player.a),h=Math.min(H*1.8,H/d*.82),wallx=(r.type==='2'?1:0);zBuf[i]=d;if(i%4===0)zBuf[i+1]=d;let shade=Math.max(18,110-d*9);x.fillStyle=`rgb(${shade*.75},${shade*.9},${shade*.82})`;x.fillRect(i,horizon-h/2,2,h);let side=((r.tx+r.ty)*2|0)%2;x.fillStyle=side?'rgba(0,0,0,.12)':'rgba(255,255,255,.025)';x.fillRect(i,horizon-h/2,2,h)}
+// sprites
+let sprites=[];for(const en of enemies)if(en.hp>0)sprites.push({x:en.x,y:en.y,kind:'enemy',o:en});for(const p of pickups)if(!p.taken)sprites.push({x:p.x,y:p.y,kind:p.type,o:p});sprites.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
+for(const s of sprites){let dx=s.x-player.x,dy=s.y-player.y,d=Math.hypot(dx,dy),ang=Math.atan2(dy,dx)-player.a;while(ang<-Math.PI)ang+=2*Math.PI;while(ang>Math.PI)ang-=2*Math.PI;if(Math.abs(ang)>fov*.65||d>.1){let rel=d*Math.cos(ang);let screen=(.5+ang/fov)*W;if(rel<zBuf[Math.max(0,Math.min(W-1,screen|0))]){let sz=H/rel*.38;if(s.kind==='enemy'){drawEnemy(screen,horizon,sz,s.o)}else{let col=s.kind==='ammo'?'#d69d38':'#55a85e';x.fillStyle=col;x.fillRect(screen-sz*.12,horizon+sz*.08,sz*.24,sz*.22);x.fillStyle='#ddd';x.fillRect(screen-sz*.04,horizon+sz*.12,sz*.08,sz*.14)}}}}
+// weapon
+let bob=Math.sin(performance.now()/120)*2;if(shake>1)bob+=(Math.random()-5)*shake*.2;let wy=H*.68+bob+(reload?Math.min(160,(.9-reload)*180):0);x.save();x.translate(W/2,wy);if(flash>0){x.fillStyle='#fff7ae';x.beginPath();x.moveTo(-28,-75);x.lineTo(0,-130);x.lineTo(28,-75);x.fill()}x.fillStyle='#3a3b36';x.fillRect(-58,-35,116,170);x.fillStyle='#151616';x.fillRect(-38,-70,76,95);x.fillStyle='#77786e';x.fillRect(-26,-82,52,130);x.fillStyle='#20211f';x.fillRect(-13,-92,26,100);x.fillStyle='#aaa';x.fillRect(-8,-105,16,35);x.restore();
+// scanlines
+x.fillStyle='rgba(0,0,0,.12)';for(let y=0;y<H;y+=4)x.fillRect(0,y,W,1)
+}
+function drawEnemy(sx,h,sz,e){let hit=e.hit>0;let pulse=e.type?1.1:1;sx-=0;if(sz>H*1.4)sz=H*1.4;x.save();x.translate(sx,h+sz*.08);if(hit)x.fillStyle='#f4e4c4';else x.fillStyle=e.type?'#7b3426':'#4f6b46';x.beginPath();x.arc(0,-sz*.25,sz*.22*pulse,0,7);x.fill();x.fillStyle=hit?'#fff':'#a9a268';x.fillRect(-sz*.12,-sz*.45,sz*.24,sz*.18);x.fillStyle='#140b08';x.fillRect(-sz*.09,-sz*.39,sz*.055,sz*.05);x.fillRect(sz*.035,-sz*.39,sz*.055,sz*.05);x.fillStyle='#28130e';x.fillRect(-sz*.25,-sz*.08,sz*.12,sz*.28);x.fillRect(sz*.13,-sz*.08,sz*.12,sz*.28);x.restore()}
+function end(win){running=false;document.exitPointerLock?.();let ov=document.getElementById('overlay');document.getElementById('title').textContent=win?'SECTOR CLEARED':'YOU DIED';document.getElementById('msg').innerHTML=win?'The compound is silent. Kills: '+player.kills:'The breach consumed you. Kills: '+player.kills;document.getElementById('start').textContent='PLAY AGAIN';ov.style.display='flex'}
+document.getElementById('start').onclick=()=>{reset();running=true;document.getElementById('overlay').style.display='none'};
+// touch controls
+let joy=false,jx=0,jy=0;const pad=document.getElementById('pad'),stick=document.getElementById('stick');pad.addEventListener('pointerdown',e=>{joy=true;pad.setPointerCapture(e.pointerId);joyMove(e)});pad.addEventListener('pointermove',e=>{if(joy)joyMove(e)});pad.addEventListener('pointerup',()=>{joy=false;jx=0;jy=0;stick.style.transform='translate(0,0)'});
+function joyMove(e){let r=pad.getBoundingClientRect();let cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy,l=Math.hypot(dx,dy)||1,m=Math.min(l,40);jx=dx/l*m/40;jy=dy/l*m/40;stick.style.transform=`translate(${jx*36}px,${jy*36}px)`}
+let lx=null;document.getElementById('touch').addEventListener('pointermove',e=>{if(e.target!==pad&&e.pointerType==='touch'){if(lx!==null)player.a+=(e.clientX-lx)*.006;lx=e.clientX}else lx=null});document.getElementByById('fire').addEventListener('pointerdown',e=>{e.preventDefault();shoot()});
+function touchUpdate(){if(!joy)return;let f=-jy,s=jx;let sp=.025;move(Math.cos(player.a)*f*sp-Math.sin(player.a)*s*sp,Math.sin(player.a)*f*sp+Math.cos(player.a)*s*sp)}
+function loop(t){let dt=Math.min(.033,(t-last)/1000||0);last=t;if(running){touchUpdate();update(dt)}draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+</script></body></html>
