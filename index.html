@@ -1,3 +1,37 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Pokéspire</title><link rel="stylesheet" href="styles.css"></head>
-<body><main id="app"></main><script src="game.js"></script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Wildspire 3D</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app">
+    <canvas id="scene" aria-label="3D creature battle arena"></canvas>
+    <header class="hud">
+      <div class="brand"><span class="sigil">W</span><div><small>EXPEDITION</small><strong>WILD<span>SPIRE</span></strong></div></div>
+      <div class="floor-copy"><small>TRAIL</small><strong id="floor">01 / 04</strong></div>
+      <div class="score"><small>CRYSTALS</small><strong id="score">0</strong></div>
+    </header>
+    <section class="battle-ui">
+      <div class="fighter player">
+        <div class="portrait"><canvas id="playerPortrait"></canvas></div>
+        <div class="fighter-info"><strong>KIT</strong><div class="bar"><i id="playerBar"></i></div><span id="playerHp">80 / 80</span></div>
+      </div>
+      <div class="turn-log" id="log">Choose your move</div>
+      <div class="fighter enemy">
+        <div class="fighter-info"><strong id="enemyName">MOSS HORN</strong><div class="bar enemy-bar"><i id="enemyBar"></i></div><span id="enemyHp">55 / 55</span></div>
+        <div class="portrait enemy-portrait"><canvas id="enemyPortrait"></canvas></div>
+      </div>
+    </section>
+    <section class="hand-wrap">
+      <div class="energy" id="energy"></div>
+      <div class="hand" id="hand"></div>
+      <button class="end-turn" id="endTurn"><small>FINISH</small><strong>TURN</strong></button>
+    </section>
+    <div class="modal hidden" id="modal"></div>
+  </main>
+  <script type="module" src="game.js"></script>
+</body>
+</html>
